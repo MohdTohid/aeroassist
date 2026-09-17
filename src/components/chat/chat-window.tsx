@@ -1,19 +1,21 @@
 "use client";
 
 import { useState } from "react";
+
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
-import type { ChatMessage as ChatMessageType } from "@/types/chat";
+
+import type {
+  ChatMessage as ChatMessageType,
+  ChatResponse,
+} from "@/types/chat";
 
 interface ChatWindowProps {
-  bookingReference: string;
+  pnr: string;
   initialMessage?: string;
 }
 
-export function ChatWindow({
-  bookingReference,
-  initialMessage,
-}: ChatWindowProps) {
+export function ChatWindow({ pnr, initialMessage }: ChatWindowProps) {
   const [messages, setMessages] = useState<ChatMessageType[]>(
     initialMessage
       ? [
@@ -46,27 +48,36 @@ export function ChatWindow({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          bookingReference,
-          message,
+          pnr,
+          user_message: message,
         }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as ChatResponse | { error?: string };
+
+      if (!response.ok) {
+        throw new Error("error" in data ? data.error : "Agent request failed.");
+      }
+
+      const agentResponse = data as ChatResponse;
 
       const assistantMessage: ChatMessageType = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: data.response ?? "Something went wrong.",
+        content: agentResponse.reply,
       };
 
       setMessages((current) => [...current, assistantMessage]);
-    } catch {
+    } catch (error) {
+      console.error(error);
+
       setMessages((current) => [
         ...current,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: "I couldn't process that request. Please try again.",
+          content:
+            "I couldn't connect to the resolution agent. Please try again.",
         },
       ]);
     } finally {
@@ -85,7 +96,7 @@ export function ChatWindow({
               </h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Ask about this customer's booking or disruption.
+                Ask AeroAssist about this customer's booking or disruption.
               </p>
             </div>
           </div>
@@ -97,7 +108,7 @@ export function ChatWindow({
 
         {loading && (
           <div className="text-sm text-muted-foreground">
-            Agent is processing...
+            AeroAssist is processing...
           </div>
         )}
       </div>

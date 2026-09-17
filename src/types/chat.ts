@@ -7,6 +7,18 @@ export interface ChatMessage {
 }
 
 export interface ChatRequest {
-  bookingReference: string;
-  message: string;
+  pnr: string;
+  user_message: string;
+}
+
+export interface SystemAction {
+  type: "none" | "escalated" | "issued_compensation";
+
+  reason?: string;
+  compensation?: string;
+}
+
+export interface ChatResponse {
+  reply: string;
+  system_action: SystemAction;
 }

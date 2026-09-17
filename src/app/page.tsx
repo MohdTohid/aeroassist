@@ -58,7 +58,7 @@ export default function Home() {
         <section className="min-h-[650px] overflow-hidden rounded-xl border">
           <ChatWindow
             key={scenario.id}
-            bookingReference={scenario.bookingReference}
+            pnr={scenario.bookingReference}
             initialMessage={scenario.initialMessage}
           />
         </section>
