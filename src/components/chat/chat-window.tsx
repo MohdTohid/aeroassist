@@ -1,6 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import {
+  Bot,
+  MessageCircle,
+  ShieldCheck,
+} from "lucide-react";
 
 import { ChatMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
@@ -10,16 +15,10 @@ import type {
   ChatResponse,
 } from "@/types/chat";
 
-interface ChatWindowProps {
-  onPnrDetected?: (pnr: string) => void;
-}
-
-export function ChatWindow({
-  onPnrDetected,
-}: ChatWindowProps) {
-  const [messages, setMessages] = useState<ChatMessageType[]>(
-    [],
-  );
+export function ChatWindow() {
+  const [messages, setMessages] = useState<
+    ChatMessageType[]
+  >([]);
 
   const [pnr, setPnr] = useState("");
   const [loading, setLoading] = useState(false);
@@ -65,6 +64,14 @@ export function ChatWindow({
 
       const agentResponse = data as ChatResponse;
 
+      /*
+       * Once the backend returns a verified PNR,
+       * keep it as the conversation's booking context.
+       */
+      if (agentResponse.pnr) {
+        setPnr(agentResponse.pnr);
+      }
+
       const assistantMessage: ChatMessageType = {
         id: crypto.randomUUID(),
         role: "assistant",
@@ -75,12 +82,6 @@ export function ChatWindow({
         ...current,
         assistantMessage,
       ]);
-
-      /*
-       * The backend currently does not return the detected PNR,
-       * so the frontend keeps the PNR once the user enters it
-       * through the optional input below.
-       */
     } catch (error) {
       console.error(error);
 
@@ -99,36 +100,101 @@ export function ChatWindow({
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex-1 space-y-4 overflow-y-auto p-6">
-        {messages.length === 0 && (
-          <div className="flex h-full items-center justify-center text-center">
-            <div>
-              <h2 className="text-lg font-semibold">
+    <div className="flex h-full min-h-[calc(100vh-150px)] flex-col">
+      {/* Chat header */}
+      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5 sm:px-5 dark:border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white shadow-sm">
+            <Bot className="h-4.5 w-4.5" />
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold">
                 AeroAssist
               </h2>
 
-              <p className="mt-1 text-sm text-muted-foreground">
-                AI Customer Resolution Agent
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            </div>
+
+            <p className="text-[11px] text-slate-400">
+              Customer resolution agent
+            </p>
+          </div>
+        </div>
+
+        <div className="hidden items-center gap-1.5 text-[10px] text-slate-400 sm:flex">
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+          Secure session
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+        {messages.length === 0 ? (
+          <div className="flex min-h-full items-center justify-center">
+            <div className="w-full max-w-md text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white shadow-xl shadow-blue-500/20">
+                <MessageCircle className="h-7 w-7" />
+              </div>
+
+              <h2 className="mt-5 text-xl font-semibold tracking-tight">
+                How can I help?
+              </h2>
+
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                Start a conversation naturally. AeroAssist will
+                ask for the information it needs to resolve the
+                customer's request.
               </p>
 
-              <p className="mt-3 text-xs text-muted-foreground">
-                Start by saying "Hi".
-              </p>
+              <div className="mt-6 grid gap-2 text-left sm:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+                  <p className="text-xs font-medium">
+                    Start with
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-400">
+                    “Hi”
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+                  <p className="text-xs font-medium">
+                    Or describe
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-400">
+                    your flight issue
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        )}
+        ) : (
+          <div className="mx-auto max-w-3xl space-y-5">
+            {messages.map((message) => (
+              <ChatMessage
+                key={message.id}
+                message={message}
+              />
+            ))}
 
-        {messages.map((message) => (
-          <ChatMessage
-            key={message.id}
-            message={message}
-          />
-        ))}
+            {loading && (
+              <div className="flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-cyan-500 text-white">
+                  <Bot className="h-4 w-4" />
+                </div>
 
-        {loading && (
-          <div className="text-sm text-muted-foreground">
-            AeroAssist is processing...
+                <div className="rounded-2xl rounded-bl-md border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
+                  <div className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
