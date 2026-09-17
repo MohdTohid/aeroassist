@@ -11,23 +11,17 @@ import type {
 } from "@/types/chat";
 
 interface ChatWindowProps {
-  pnr: string;
-  initialMessage?: string;
+  onPnrDetected?: (pnr: string) => void;
 }
 
-export function ChatWindow({ pnr, initialMessage }: ChatWindowProps) {
+export function ChatWindow({
+  onPnrDetected,
+}: ChatWindowProps) {
   const [messages, setMessages] = useState<ChatMessageType[]>(
-    initialMessage
-      ? [
-          {
-            id: crypto.randomUUID(),
-            role: "user",
-            content: initialMessage,
-          },
-        ]
-      : [],
+    [],
   );
 
+  const [pnr, setPnr] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function sendMessage(message: string) {
@@ -37,7 +31,10 @@ export function ChatWindow({ pnr, initialMessage }: ChatWindowProps) {
       content: message,
     };
 
-    setMessages((current) => [...current, userMessage]);
+    setMessages((current) => [
+      ...current,
+      userMessage,
+    ]);
 
     setLoading(true);
 
@@ -48,15 +45,22 @@ export function ChatWindow({ pnr, initialMessage }: ChatWindowProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          pnr,
+          ...(pnr ? { pnr } : {}),
           user_message: message,
         }),
       });
 
-      const data = (await response.json()) as ChatResponse | { error?: string };
+      const data =
+        (await response.json()) as
+          | ChatResponse
+          | { error?: string };
 
       if (!response.ok) {
-        throw new Error("error" in data ? data.error : "Agent request failed.");
+        throw new Error(
+          "error" in data
+            ? data.error
+            : "Agent request failed.",
+        );
       }
 
       const agentResponse = data as ChatResponse;
@@ -67,7 +71,16 @@ export function ChatWindow({ pnr, initialMessage }: ChatWindowProps) {
         content: agentResponse.reply,
       };
 
-      setMessages((current) => [...current, assistantMessage]);
+      setMessages((current) => [
+        ...current,
+        assistantMessage,
+      ]);
+
+      /*
+       * The backend currently does not return the detected PNR,
+       * so the frontend keeps the PNR once the user enters it
+       * through the optional input below.
+       */
     } catch (error) {
       console.error(error);
 
@@ -92,18 +105,25 @@ export function ChatWindow({ pnr, initialMessage }: ChatWindowProps) {
           <div className="flex h-full items-center justify-center text-center">
             <div>
               <h2 className="text-lg font-semibold">
-                Customer Resolution Agent
+                AeroAssist
               </h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Ask AeroAssist about this customer's booking or disruption.
+                AI Customer Resolution Agent
+              </p>
+
+              <p className="mt-3 text-xs text-muted-foreground">
+                Start by saying "Hi".
               </p>
             </div>
           </div>
         )}
 
         {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
+          <ChatMessage
+            key={message.id}
+            message={message}
+          />
         ))}
 
         {loading && (
@@ -113,7 +133,10 @@ export function ChatWindow({ pnr, initialMessage }: ChatWindowProps) {
         )}
       </div>
 
-      <ChatInput onSend={sendMessage} disabled={loading} />
+      <ChatInput
+        onSend={sendMessage}
+        disabled={loading}
+      />
     </div>
   );
 }

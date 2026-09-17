@@ -7,12 +7,15 @@ export interface ChatMessage {
 }
 
 export interface ChatRequest {
-  pnr: string;
+  pnr?: string;
   user_message: string;
 }
 
 export interface SystemAction {
-  type: "none" | "escalated" | "issued_compensation";
+  type:
+    | "none"
+    | "escalated"
+    | "issued_compensation";
 
   reason?: string;
   compensation?: string;
