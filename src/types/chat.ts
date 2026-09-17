@@ -12,11 +12,7 @@ export interface ChatRequest {
 }
 
 export interface SystemAction {
-  type:
-    | "none"
-    | "escalated"
-    | "issued_compensation";
-
+  type: "none" | "escalated" | "issued_compensation";
   reason?: string;
   compensation?: string;
 }
@@ -24,4 +20,5 @@ export interface SystemAction {
 export interface ChatResponse {
   reply: string;
   system_action: SystemAction;
+  pnr?: string | null;
 }
